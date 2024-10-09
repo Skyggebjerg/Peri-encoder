@@ -10,6 +10,9 @@
 #include "Unit_Encoder.h"
 #include "M5UnitHbridge.h"
 
+int forsink = 2300; //4700 = fast; 9400 = slow
+bool progmode = true; //programming mode or not
+
 M5GFX display;
 M5Canvas canvas(&display);
 Unit_Encoder sensor;
@@ -33,6 +36,37 @@ signed short int last_value = 0;
 signed short int last_btn = 0;
 
 void loop() {
+
+    AtomS3.update();
+    if (AtomS3.BtnA.wasPressed()) {
+        progmode = !progmode;
+        AtomS3.Display.drawString(String(progmode), 40, 50);
+    }
+        // This loop runs the pump in 30ms bursts for i iterations with delays that are dependent on button press that toggles fast/slow
+    while(!progmode) {
+    AtomS3.update();
+    if (AtomS3.BtnA.wasPressed()) {
+        progmode = !progmode;
+        AtomS3.Display.drawString(String(progmode), 40, 50);
+    }
+        //for(int i = 0; i < 10; i++){
+            driver.setDriverDirection(HBRIDGE_FORWARD); // Set peristaltic pump in forward to take out BR content
+            //driver.setDriverDirection(HBRIDGE_BACKWARD)
+            driver.setDriverSpeed8Bits(127); //Run pump in half speed
+        //Serial.print("Forward pump for 30 msecs #: ");
+        //Serial.println(i);
+            delay(30); // to be set by adjustment
+            driver.setDriverDirection(HBRIDGE_STOP);
+            driver.setDriverSpeed8Bits(0);  //Stop pump
+            delay(100); // to be set by adjustment
+}
+
+// if (AtomS3.BtnA.wasReleased()) {
+
+
+               
+        //}
+
     signed short int encoder_value = sensor.getEncoderValue();
     bool btn_status                = sensor.getButtonStatus();
     if (last_value != encoder_value) {
