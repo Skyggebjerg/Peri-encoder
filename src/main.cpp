@@ -14,7 +14,11 @@ uint64_t forsink = 100; //delay between runs
 uint64_t tempus;
 int ontime = 30; // how long time to run motor
 bool progmode = true; //programming mode or not
+bool newpress = true; // monitor if button just pressed 
 int mstatus = 0; // defines which state the system is in
+
+signed short int last_value = 0;
+signed short int last_btn = 0;
 
 M5GFX display;
 M5Canvas canvas(&display);
@@ -36,9 +40,6 @@ void setup() {
     tempus = millis();
 }
 
-signed short int last_value = 0;
-signed short int last_btn = 0;
-
 void loop() {
 
     AtomS3.update();
@@ -48,25 +49,30 @@ void loop() {
         //progmode = !progmode;
         AtomS3.Display.clear();
         AtomS3.Display.drawString(String(mstatus), 10, 100);
+        newpress = true;
     }
 
         switch (mstatus) {
 
         case 0: //run motor
         { 
+            if (newpress) {
+                AtomS3.Display.drawString("Running", 5, 0);
+                newpress = false;
+            }
+
             if (millis() - tempus >= forsink) // to be set by adjustment (100)
             {
-            AtomS3.Display.drawString("Running", 5, 0);
-            AtomS3.Display.drawString(String(ontime), 10, 30);
-            AtomS3.Display.drawString(String(forsink), 10, 60);
-            //AtomS3.Display.drawString(String(mstatus), 10, 100);    
-            driver.setDriverDirection(HBRIDGE_FORWARD); // Set peristaltic pump in forward to take out BR content
-            //driver.setDriverDirection(HBRIDGE_BACKWARD)
-            driver.setDriverSpeed8Bits(127); //Run pump in half speed
-            delay(ontime); // to be set by adjustment (30)
-            driver.setDriverDirection(HBRIDGE_STOP);
-            driver.setDriverSpeed8Bits(0);  //Stop pump
-            tempus = millis();
+                AtomS3.Display.drawString("Running", 5, 0);
+                AtomS3.Display.drawString(String(ontime), 10, 30);
+                AtomS3.Display.drawString(String(forsink), 10, 60);   
+                driver.setDriverDirection(HBRIDGE_FORWARD); // Set peristaltic pump in forward to take out BR content
+                //driver.setDriverDirection(HBRIDGE_BACKWARD)
+                driver.setDriverSpeed8Bits(127); //Run pump in half speed
+                delay(ontime); // to be set by adjustment (30)
+                driver.setDriverDirection(HBRIDGE_STOP);
+                driver.setDriverSpeed8Bits(0);  //Stop pump
+                tempus = millis();
             }
             
             break;
@@ -77,32 +83,42 @@ void loop() {
             signed short int encoder_value = sensor.getEncoderValue();
             bool btn_status                = sensor.getButtonStatus();
             ontime = encoder_value;
-            if (last_value != encoder_value) {
-                AtomS3.Display.clear();
-                if (last_value > encoder_value) {
-                    sensor.setLEDColor(1, 0x000011); // change color on LED1 when forward
-                } else {
-                    sensor.setLEDColor(2, 0x111100); // color on LED2 when backward
-                }
-            last_value = encoder_value;
-            } else {
-                sensor.setLEDColor(0, 0x001100); // both LEDs are low intensity when not pressed
+
+            if (newpress) {
+                AtomS3.Display.drawString("On time", 5, 0);
+                AtomS3.Display.drawString(String(encoder_value), 10, 30);
+                newpress = false;
             }
+
+            if (last_value != encoder_value) {
+                AtomS3.Display.setTextColor(BLACK);
+                AtomS3.Display.drawString(String(last_value), 10, 30);
+                AtomS3.Display.setTextColor(WHITE);
+                AtomS3.Display.drawString(String(encoder_value), 10, 30);
+                last_value = encoder_value;
+            }
+
+                //if (last_value > encoder_value) {
+                //    sensor.setLEDColor(1, 0x000011); // change color on LED1 when forward
+                //} else {
+                //    sensor.setLEDColor(2, 0x111100); // color on LED2 when backward
+                //}
+
+            //} else {
+            //    sensor.setLEDColor(0, 0x001100); // both LEDs are low intensity when not pressed
+            //}
 
             if (last_btn != btn_status) {
                 last_btn = btn_status;
-                AtomS3.Display.clear();
-                AtomS3.Display.drawString(String(btn_status), 40, 5);
-                AtomS3.Display.drawString(String(encoder_value), 40, 20);
+            //    AtomS3.Display.clear();
+            //    AtomS3.Display.drawString(String(btn_status), 40, 5);
+            //    AtomS3.Display.drawString(String(encoder_value), 40, 20);
             }
 
-            if (!btn_status) {
-                sensor.setLEDColor(0, 0xC800FF); //light up both LEDs when pressed
-            }
-    
-            // AtomS3.Display.drawString(String(btn_status), 40, 5);
-            AtomS3.Display.drawString("On time", 5, 0);
-            AtomS3.Display.drawString(String(encoder_value), 10, 30);
+            //if (!btn_status) {
+            //    sensor.setLEDColor(0, 0xC800FF); //light up both LEDs when pressed
+            //}
+;
             delay(20);
             break;
         }
@@ -111,16 +127,21 @@ void loop() {
         {
             signed short int encoder_value = sensor.getEncoderValue();
             forsink = encoder_value * 100;
-            //AtomS3.Display.clear();
 
-            if (last_value != encoder_value) {
-                AtomS3.Display.clear();
-
-            last_value = encoder_value;
+            if (newpress) {
+                AtomS3.Display.drawString("Delay", 5, 0);
+                AtomS3.Display.drawString(String(encoder_value*100), 10, 60);
+                newpress = false;
             }
 
-            AtomS3.Display.drawString("Delay", 5, 0);
-            AtomS3.Display.drawString(String(forsink), 10, 60);
+            if (last_value != encoder_value) {
+                AtomS3.Display.setTextColor(BLACK);
+                AtomS3.Display.drawString(String(last_value*100), 10, 60);
+                AtomS3.Display.setTextColor(WHITE);
+                AtomS3.Display.drawString(String(encoder_value*100), 10, 60);
+                last_value = encoder_value;
+            }
+
             break;    
         }
 
