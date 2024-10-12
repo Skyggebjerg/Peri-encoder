@@ -13,12 +13,11 @@
 uint64_t forsink = 100; //delay between runs
 uint64_t tempus;
 int ontime = 30; // how long time to run motor
-bool progmode = true; //programming mode or not
 bool newpress = true; // monitor if button just pressed 
 int mstatus = 0; // defines which state the system is in
 
 signed short int last_value = 0;
-signed short int last_btn = 0;
+signed short int last_btn = 1;
 
 M5GFX display;
 M5Canvas canvas(&display);
@@ -35,24 +34,26 @@ void setup() {
     AtomS3.Display.setTextColor(WHITE);
     AtomS3.Display.setTextSize(3);
     AtomS3.Display.clear();
-    //AtomS3.Display.drawString("1", 40, 5);
-    //AtomS3.Display.drawString("0", 40, 20);
     tempus = millis();
 }
 
 void loop() {
 
     AtomS3.update();
-    if (AtomS3.BtnA.wasPressed()) {
-        mstatus = mstatus +1;
-        if(mstatus == 5) mstatus = 0; // go back to base state
-        //progmode = !progmode;
-        AtomS3.Display.clear();
-        AtomS3.Display.drawString(String(mstatus), 10, 100);
-        newpress = true;
+    bool btn_status                = sensor.getButtonStatus();
+    //if (AtomS3.BtnA.wasPressed()) { // Change mode when click ATOMS3 button
+    if (last_btn != btn_status) { // Change mode when click encoder - check if encoder is pressed down or up
+        if (!btn_status) { // Only change mode when encoder go from high to low
+            mstatus = mstatus +1;
+            if(mstatus == 5) mstatus = 0; // go back to base state
+            AtomS3.Display.clear();
+            AtomS3.Display.drawString(String(mstatus), 10, 100);
+            newpress = true;
+        }
+        last_btn = btn_status;
     }
 
-        switch (mstatus) {
+    switch (mstatus) {
 
         case 0: //run motor
         { 
@@ -60,7 +61,6 @@ void loop() {
                 AtomS3.Display.drawString("Running", 5, 0);
                 newpress = false;
             }
-
             if (millis() - tempus >= forsink) // to be set by adjustment (100)
             {
                 AtomS3.Display.drawString("Running", 5, 0);
@@ -74,14 +74,12 @@ void loop() {
                 driver.setDriverSpeed8Bits(0);  //Stop pump
                 tempus = millis();
             }
-            
             break;
-        }
+        } // end of case 0
 
         case 1: // read encoder for ON time in ms
         {
             signed short int encoder_value = sensor.getEncoderValue();
-            bool btn_status                = sensor.getButtonStatus();
             ontime = encoder_value;
 
             if (newpress) {
@@ -97,31 +95,9 @@ void loop() {
                 AtomS3.Display.drawString(String(encoder_value), 10, 30);
                 last_value = encoder_value;
             }
-
-                //if (last_value > encoder_value) {
-                //    sensor.setLEDColor(1, 0x000011); // change color on LED1 when forward
-                //} else {
-                //    sensor.setLEDColor(2, 0x111100); // color on LED2 when backward
-                //}
-
-            //} else {
-            //    sensor.setLEDColor(0, 0x001100); // both LEDs are low intensity when not pressed
-            //}
-
-            if (last_btn != btn_status) {
-                last_btn = btn_status;
-            //    AtomS3.Display.clear();
-            //    AtomS3.Display.drawString(String(btn_status), 40, 5);
-            //    AtomS3.Display.drawString(String(encoder_value), 40, 20);
-            }
-
-            //if (!btn_status) {
-            //    sensor.setLEDColor(0, 0xC800FF); //light up both LEDs when pressed
-            //}
-;
             delay(20);
             break;
-        }
+        } // end of case 1
 
         case 2: // read encoder for ON time in ms
         {
@@ -141,9 +117,8 @@ void loop() {
                 AtomS3.Display.drawString(String(encoder_value*100), 10, 60);
                 last_value = encoder_value;
             }
-
             break;    
-        }
+        } // end of case 2
 
-        }
+    } // end of switch cases
 }
