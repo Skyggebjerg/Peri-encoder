@@ -9,8 +9,13 @@
 #include <M5GFX.h>
 #include "Unit_Encoder.h"
 #include "M5UnitHbridge.h"
+#include <EEPROM.h>
 
-uint64_t forsink = 100; //delay between runs
+// define the number of bytes you want to access
+#define EEPROM_SIZE 2
+
+uint64_t forsink = 1000; //delay between runs
+int save_forsink = 10; // forsink saved in EEPROM as int (forsink divided by 100)
 uint64_t tempus;
 int ontime = 30; // how long time to run motor
 bool newpress = true; // monitor if button just pressed 
@@ -25,6 +30,11 @@ Unit_Encoder sensor;
 M5UnitHbridge driver;
 
 void setup() {
+    // initialize EEPROM with predefined size
+    EEPROM.begin(EEPROM_SIZE);
+    ontime = EEPROM.read(0);
+    save_forsink = EEPROM.read(1);
+    forsink = save_forsink*100;
     Wire.begin(2,1);
     auto cfg = M5.config();
     AtomS3.begin(cfg);
@@ -39,7 +49,7 @@ void setup() {
 
 void loop() {
 
-    AtomS3.update();
+    //AtomS3.update();
     bool btn_status                = sensor.getButtonStatus();
     //if (AtomS3.BtnA.wasPressed()) { // Change mode when click ATOMS3 button
     if (last_btn != btn_status) { // Change mode when click encoder - check if encoder is pressed down or up
@@ -119,6 +129,26 @@ void loop() {
             }
             break;    
         } // end of case 2
+
+        case 3: // check if we want to save ontime by pres Atom button
+        {
+            if (newpress) {
+                AtomS3.Display.drawString("Save ?", 5, 0);
+                AtomS3.Display.drawString(String(ontime), 10, 30);
+                AtomS3.Display.drawString(String(forsink), 10, 60);
+                newpress = false;
+            }
+            
+            AtomS3.update();
+            if (AtomS3.BtnA.wasPressed()) { // Save to EEPROM
+                EEPROM.write(0, ontime);
+                save_forsink = forsink/100;
+                EEPROM.write(1,save_forsink);
+                EEPROM.commit();
+                AtomS3.Display.drawString("Saved", 30, 100);
+            }
+            break;    
+        } // end of case 3
 
     } // end of switch cases
 }
