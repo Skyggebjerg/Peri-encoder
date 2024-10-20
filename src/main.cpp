@@ -90,20 +90,25 @@ void loop() {
         case 1: // read encoder for ON time in ms
         {
             signed short int encoder_value = sensor.getEncoderValue();
-            ontime = encoder_value;
+            //ontime = encoder_value;
 
             if (newpress) {
                 AtomS3.Display.drawString("On time", 5, 0);
-                AtomS3.Display.drawString(String(encoder_value), 10, 30);
+                AtomS3.Display.drawString(String(ontime), 10, 30);
+                last_value = encoder_value; // Update the last value
                 newpress = false;
             }
 
             if (last_value != encoder_value) {
+                int relative_change = encoder_value - last_value; // Calculate the relative change
+
                 AtomS3.Display.setTextColor(BLACK);
-                AtomS3.Display.drawString(String(last_value), 10, 30);
+                AtomS3.Display.drawString(String(ontime), 10, 30); // Clear the previous value
                 AtomS3.Display.setTextColor(WHITE);
-                AtomS3.Display.drawString(String(encoder_value), 10, 30);
-                last_value = encoder_value;
+                ontime = ontime + relative_change; // Update the value
+                AtomS3.Display.drawString(String(ontime), 10, 30); // Display the updated change
+
+                last_value = encoder_value; // Update the last value
             }
             delay(20);
             break;
@@ -149,6 +154,8 @@ void loop() {
             }
             break;    
         } // end of case 3
+
+    
 
     } // end of switch cases
 }
