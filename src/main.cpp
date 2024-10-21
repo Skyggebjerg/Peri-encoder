@@ -114,28 +114,31 @@ void loop() {
             break;
         } // end of case 1
 
-        case 2: // read encoder for ON time in ms
+        case 2: // read encoder for forsink in ms
         {
             signed short int encoder_value = sensor.getEncoderValue();
-            forsink = encoder_value * 100;
+            //forsink = encoder_value * 100;
 
             if (newpress) {
                 AtomS3.Display.drawString("Delay", 5, 0);
-                AtomS3.Display.drawString(String(encoder_value*100), 10, 60);
+                AtomS3.Display.drawString(String(forsink), 10, 60);
+                last_value = encoder_value; // Update the last value
                 newpress = false;
             }
 
             if (last_value != encoder_value) {
+                int relative_change = encoder_value - last_value; // Calculate the relative change
                 AtomS3.Display.setTextColor(BLACK);
-                AtomS3.Display.drawString(String(last_value*100), 10, 60);
+                AtomS3.Display.drawString(String(forsink), 10, 60);
                 AtomS3.Display.setTextColor(WHITE);
-                AtomS3.Display.drawString(String(encoder_value*100), 10, 60);
+                forsink = forsink + relative_change*100; // Update the value
+                AtomS3.Display.drawString(String(forsink), 10, 60);
                 last_value = encoder_value;
             }
             break;    
         } // end of case 2
 
-        case 3: // check if we want to save ontime by pres Atom button
+        case 3: // check if we want to save ontime and forsink by pres Atom button
         {
             if (newpress) {
                 AtomS3.Display.drawString("Save ?", 5, 0);
@@ -150,7 +153,22 @@ void loop() {
                 save_forsink = forsink/100;
                 EEPROM.write(1,save_forsink);
                 EEPROM.commit();
+
+                // Flash the display in black and green
+                for (int i = 0; i < 3; i++) {
+                    AtomS3.Display.fillScreen(TFT_BLACK);
+                    delay(200);
+                    AtomS3.Display.fillScreen(TFT_GREEN);
+                    delay(200);
+                }
+
+                // Display "Saved" with a black background
+                AtomS3.Display.fillScreen(TFT_BLACK);
+                AtomS3.Display.setTextColor(TFT_WHITE, TFT_BLACK); // White text on black background
+                AtomS3.Display.drawString(String(ontime), 10, 30);
+                AtomS3.Display.drawString(String(forsink), 10, 60);
                 AtomS3.Display.drawString("Saved", 30, 100);
+
             }
             break;    
         } // end of case 3
